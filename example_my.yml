@@ -1,0 +1,128 @@
+# Random seed for pytorch and all shuffle functions
+seed: 10
+
+# Data type to use for tensors, either float32 or float64
+dtype: float32
+
+training:
+
+  sample_shot: false
+
+  shot_per_epoch: 10
+
+  # This prefix is applied to the filename when saving the model; if not specified a date/time is used
+  prefix: ex
+
+  # Number of training epochs
+  N_epochs: 30
+
+  # Optimizer learning rate
+  lr: 10
+
+  # Batch size used over both training and testing datasets   
+  batch_size: 6
+
+  # Limit the maximum number of samples to this number 
+  # If unspecified then all samples available for the specified vowel classes and gender are used
+  max_samples: 12
+
+  # If true, k-fold cross validation is performed where k = N_folds
+  cross_validation: false
+
+geom:
+
+  # The observer data
+  obsPath: /mnt/others/DATA/Inversion/RNN_Marmousi/data/data.npy
+
+  # Wave speed model from disk_file for forward modeling
+  cPath: /mnt/others/DATA/Inversion/RNN_Marmousi/velocity/Ori_20_20_173x561_500msea.npy
+
+  # Inital Wave speed model from disk_file
+  initPath: /mnt/others/DATA/Inversion/RNN_Marmousi/velocity/Init_20_20_173x561_500msea.npy
+
+  # Save the results of FWI
+  inv_savePath: /mnt/others/DATA/Inversion/RNN_Marmousi/inversion
+
+  #initPath /mnt/others/DATA/Inversion/RNN/velocity/LINEAR.dat
+  # Use the (currently hard coded) design region which sits between the src and probes with a 5 gride cell buffer
+
+  multiscale: 
+    - 3.0
+    - 5.0
+    - 8.0
+
+  use_design_region: true
+
+  # Initialization of the design region, either 'rand', 'half', or 'blank'
+  init: blank
+
+  # Number of grid cells in x-dimension of simulation domain
+  Nx: 561
+
+  # Number of grid cells in y-dimension of simulation domain
+  Ny: 173
+
+  # Time Sampling step
+  dt: 0.001
+
+  # Time samples
+  nt: 3500
+
+  # Main frequency of ricker wave
+  fm: 10
+
+  # Spatial grid step size
+  h: 15.0
+
+  # Wave speed background value (e.g. in PML and non-design region)
+  c0: 1.0 #1.0
+
+  # Wave speed value to use with c0 during binarization
+  c1: 0.5
+
+  # Total receivers
+  Nreceivers: 561
+
+  # Total Shots
+  Nshots: 10
+
+  # Probe init_x coordinate in grid cells
+  ipx: 0
+
+  # Source init_x coordinate in grid cells
+  isx: 0
+
+  # Probe x-coordinates in grid cells
+  px:
+    
+  # Probe y-coordinates in grid cells
+  py: 1
+
+  # Spacing, in number grid cells, between probe points
+  pd: 1
+
+  # Source x-coordinate in grid cells
+  src_x: 280
+
+  # Source y-coordinate in grid cells
+  src_y: 1
+
+  # Spacing, in number grid cells, between source points
+  src_d: 50
+
+  blur_radius: 1
+  blur_N: 1
+
+  pml:
+    N: 10    # PML thickness in number of grid cells
+    p: 4.0   # PML polynomial order
+    max: 20.0 # PML max dampening factor
+
+  nonlinearity:
+    cnl: 0.0  # Kerr-like nonlinear wavespeed term
+    b0: 0.0   # Saturable abs. strength
+    uth: 1.0  # Saturable abs. threshold
+
+  binarization:
+    beta: 100   # These parameterize the binarization projection function
+    eta: 0.5    # see the Angler supplementary info for now
