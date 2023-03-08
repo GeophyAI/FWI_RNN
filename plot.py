@@ -3,13 +3,13 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-d = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/data/data.npy").squeeze()
-no = 50
-vmin,vmax=np.percentile(d[no], [2, 98])
-plt.imshow(d[no], vmin=vmin, vmax=vmax, cmap=plt.cm.gray, aspect='auto')
-plt.show()
-print(d.shape)
-exit()
+# d = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/data/data.npy").squeeze()
+# no = 50
+# vmin,vmax=np.percentile(d[no], [2, 98])
+# plt.imshow(d[no], vmin=vmin, vmax=vmax, cmap=plt.cm.gray, aspect='auto')
+# plt.show()
+# print(d.shape)
+# exit()
 
 """
 Model cut
@@ -25,13 +25,14 @@ Model cut
 """
 Results
 """
-ori = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/true.npy")
-inv = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/inversion/vel8.00freq_49epoch.npy")[10:-10,10:-10]
-smm = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/init.npy")
+pmlN = 50
+ori = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/velocity/Ori_20_20_173x561_500msea.npy")
+inv = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/inversion/vel3.00freq_03epoch.npy")[pmlN:-pmlN,pmlN:-pmlN]
+smm = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/velocity/Init_20_20_173x561_500msea.npy")
 #inv-=smm
 print(inv.max(), inv.min())
 fig, axes = plt.subplots(1, 3)
-(vmin, vmax) = (1500, 2500)
+(vmin, vmax) = (1500, 5500)
 axes[0].imshow(ori, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
 axes[1].imshow(inv, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
 axes[2].imshow(smm, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
@@ -42,16 +43,16 @@ plt.show()
 """
 Show gradients
 """
-# grad0 = np.load("/mnt/others/DATA/Inversion/RNN_LBFGS/inversion/grad_00epoch.npy")
-# grad1 = np.load("/mnt/others/DATA/Inversion/RNN_LBFGS/inversion/grad_03epoch.npy")
-# grad2 = np.load("/mnt/others/DATA/Inversion/RNN_LBFGS/inversion/grad_09epoch.npy")
-#
-# fig, axes = plt.subplots(1, 3)
-# vmin,vmax=np.percentile(grad0, [2, 98])
-# axes[0].imshow(grad0, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
-# axes[1].imshow(grad1, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
-# axes[2].imshow(grad2, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
-# plt.show()
+grad0 = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/inversion/grad_00epoch.npy")[pmlN:-pmlN, pmlN:-pmlN]
+grad1 = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/inversion/grad_01epoch.npy")[pmlN:-pmlN, pmlN:-pmlN]
+grad2 = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/inversion/grad_02epoch.npy")[pmlN:-pmlN, pmlN:-pmlN]
+
+fig, axes = plt.subplots(1, 3)
+vmin,vmax=np.percentile(grad0, [2, 98])
+axes[0].imshow(grad0, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+axes[1].imshow(grad1, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+axes[2].imshow(grad2, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+plt.show()
 
 """
 Precondtioned by Hessian

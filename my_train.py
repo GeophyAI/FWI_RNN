@@ -146,8 +146,6 @@ if __name__ == '__main__':
 
     #cnn.train()
 
-    #x = torch.unsqueeze(x, 0)
-
     record = np.zeros((cfg['geom']['Nshots'], cfg['geom']['nt'], ori_cfg['geom']['Nx'], 1), dtype=np.float32)
     if args.mode == 'forward':
         x = ricker_wave(cfg['geom']['fm'], cfg['geom']['dt'], cfg['geom']['nt'])
