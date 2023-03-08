@@ -14,7 +14,8 @@ from mpi4py import MPI
 from torch.utils.data import TensorDataset, DataLoader
 from wavetorch.utils import ricker_wave, to_tensor, cpu_fft, CNN
 from KFAC.optimizers import KFACOptimizer
-
+import functorch
+from functorch import hessian
 
 import argparse
 import time
@@ -129,10 +130,11 @@ if __name__ == '__main__':
 
     ### Train
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg['training']['lr'], eps=1e-12)
+    #optimizer = torch.optim.LBFGS(model.parameters(), lr=cfg['training']['lr'],
+    #                              history_size=10, line_search_fn=None, tolerance_grad=1e-16)
 
 
     opt_cnn = torch.optim.Adam(cnn.parameters(), lr=cfg['training']['lr'], eps=1e-12)
-    #optimizer = torch.optim.LBFGS(model.parameters(), lr=cfg['training']['lr'], history_size=10, line_search_fn='strong_wolfe')
     criterion = torch.nn.MSELoss()
     criterion_cnn = torch.nn.MSELoss()
     #criterion = torch.nn.L1Loss()
@@ -141,6 +143,7 @@ if __name__ == '__main__':
     source_x_list, source_y_list = get_sources_coordinate_list(cfg['geom']['ipx'], cfg['geom']['src_y'], cfg['geom']['src_d'], cfg['geom']['Nshots'], cfg['geom']['Nx'], cfg['geom']['Ny'], cfg['geom']['pml']['N'])
     
     model.train()
+
     #cnn.train()
 
     #x = torch.unsqueeze(x, 0)
@@ -184,16 +187,31 @@ if __name__ == '__main__':
                     shot_range = range(rank, cfg['training']['shot_per_epoch'], size)
                 else:
                     shots_current_epoch = np.arange(cfg['geom']['Nshots'])
-                    shot_range = range(rank, cfg['geom']['Nshots'], size)
+                    shot_range = tqdm.trange(rank, cfg['geom']['Nshots'], size)
 
                 for shot in shot_range:
+
+                    # Reset source positions
                     shot = shots_current_epoch[shot]
-                    source = setup_src_coords_customer(source_x_list[shot], source_y_list[shot], cfg['geom']['Nx'], cfg['geom']['Ny'], cfg['geom']['pml']['N'])
+                    source = setup_src_coords_customer(source_x_list[shot], source_y_list[shot], cfg['geom']['Nx'],
+                                                       cfg['geom']['Ny'], cfg['geom']['pml']['N'])
                     model.reset_sources(source)
 
+                    # Adam optimizer
                     ypred = model(filtered_ricker)
                     loss = criterion(ypred, ytrue[shot].to(ypred.device).unsqueeze(0))
-                    loss_cpu[idx_freq, epoch, shot] = loss.cpu().detach().numpy()
+                    loss.backward()
+
+                    # L-BFGS
+                    # def closure():
+                    #
+                    #     optimizer.zero_grad()
+                    #     ypred = model(filtered_ricker)
+                    #     loss = criterion(ypred, ytrue[shot].to(ypred.device).unsqueeze(0))
+                    #     loss.backward()
+                    #
+                    #     return loss
+                    #loss_cpu[idx_freq, epoch, shot] = loss.cpu().detach().numpy()
 
                     #Precondition with Hessian
                     PRECOND = False
@@ -203,24 +221,31 @@ if __name__ == '__main__':
                         HESSIAN = np.zeros(shape=(length, length), dtype=np.float32)
                         hess_params = torch.zeros_like(env_grads[0])
 
+                        pml_N = cfg['geom']['pml']['N']
                         for i in tqdm.trange(env_grads[0].size(0)):
                             for j in tqdm.trange(env_grads[0].size(1)):
+                        # for i in tqdm.trange(pml_N, env_grads[0].size(0)-pml_N):
+                        #     for j in tqdm.trange(pml_N, env_grads[0].size(1)-pml_N):
                                 hess_params = torch.autograd.grad(env_grads[0][i][j], model.parameters(), retain_graph=True)[0]
                                 HESSIAN[i*env_grads[0].size(1)+j] = hess_params.detach().cpu().numpy().flatten()
 
                         # Save the Hessian
-                        np.save("/mnt/others/DATA/Inversion/RNN_Hessian/hessian/hessian_%shot.npy"%(shot), HESSIAN)
+                        np.save("/mnt/others/DATA/Inversion/RNN_LBFGS/hessian/hessian_%shot.npy"%(shot), HESSIAN)
 
-                    loss.backward()
-                    #np.save("/mnt/others/DATA/Inversion/RNN_Hessian/grad/grad_%shot.npy"%(shot), model.cell.geom.vel.grad.cpu().detach().numpy())
+                    # Update the weights
+                    # LBFGS
+                    #loss = optimizer.step(closure)
+                    #loss.backward()
+                    #np.save("/mnt/others/DATA/Inversion/RNN_LBFGS/grad/grad_%shot.npy"%(shot), model.cell.geom.vel.grad.cpu().detach().numpy())
 
                 #pbar.set_description(f'Freq [%d/%d]'%(idx_freq+1, len(cfg['geom']['multiscale'])))
-                #grad_each_rank = model.cell.geom.vel.grad.cpu().detach().numpy()
-                #grad_root = np.zeros_like(grad_each_rank)
-                #comm.Allreduce(grad_each_rank, grad_root)
+                grad_each_rank = model.cell.geom.vel.grad.cpu().detach().numpy()
+                grad_root = np.zeros_like(grad_each_rank)
+                comm.Allreduce(grad_each_rank, grad_root)
                 if rank==0:
 
-                    #np.save(os.path.join(cfg['geom']['inv_savePath'], 'grad_%02depoch.npy'%(epoch)), grad_root)
+                    # Save grad of all shots
+                    np.save(os.path.join(cfg['geom']['inv_savePath'], 'grad_%02depoch.npy'%(epoch)), grad_root)
 
                     loss = optimizer.step()
 
@@ -229,9 +254,7 @@ if __name__ == '__main__':
                     # vel[0:cfg['geom']['pml']['N']+24,:] = 1500
                     # model.cell.geom.c.data = to_tensor(vel).to(args.dev)
 
-                    #perturbation = np.random.random(vel.shape).astype(vel.dtype)*5
-                    #vel+=perturbation
-                    #model.cell.geom.c = vel
+                    # Save inverted model
                     np.save(os.path.join(cfg['geom']['inv_savePath'], 'vel%.2ffreq_%02depoch.npy'%(freq, epoch)), vel)
                     #np.save(os.path.join(cfg['geom']['inv_savePath'], 'loss.npy'), loss_cpu)
 
