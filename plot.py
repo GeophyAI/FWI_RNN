@@ -3,13 +3,13 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-# d = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/data/data.npy").squeeze()
-# no = 5
-# vmin,vmax=np.percentile(d[no], [2, 98])
-# plt.imshow(d[no], vmin=vmin, vmax=vmax, cmap=plt.cm.gray, aspect='auto')
-# plt.show()
-# print(d.shape)
-# exit()
+d = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/data/data.npy").squeeze()
+no = 50
+vmin,vmax=np.percentile(d[no], [2, 98])
+plt.imshow(d[no], vmin=vmin, vmax=vmax, cmap=plt.cm.gray, aspect='auto')
+plt.show()
+print(d.shape)
+exit()
 
 """
 Model cut
@@ -25,44 +25,33 @@ Model cut
 """
 Results
 """
-ori = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/velocity/Ori_20_20_173x561_500msea.npy")
-inv = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/inversion/vel8.00freq_29epoch.npy")[10:-10,10:-10]
-smm = np.load("/mnt/others/DATA/Inversion/RNN_Marmousi/velocity/Init_20_20_173x561_500msea.npy")
+ori = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/true.npy")
+inv = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/inversion/vel8.00freq_49epoch.npy")[10:-10,10:-10]
+smm = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/init.npy")
 #inv-=smm
+print(inv.max(), inv.min())
 fig, axes = plt.subplots(1, 3)
-(vmin, vmax) = (1500, 5500)
+(vmin, vmax) = (1500, 2500)
 axes[0].imshow(ori, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
 axes[1].imshow(inv, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
 axes[2].imshow(smm, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
 
 plt.show()
-# print(d.shape)
 
 
-# grad = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/grad/grad_0hot.npy")
-# grad2 = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/grad/grad_2hot.npy")
-# grad = grad2 -grad1
-# shape = grad.shape
-# vmin,vmax=np.percentile(grad, [2, 98])
-# plt.imshow(grad, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
-# plt.show()
 """
-Hessian plot
+Show gradients
 """
-# hessian = []
-# import os, sys, glob
-# for file in sorted(glob.glob(os.path.join("/mnt/others/DATA/Inversion/RNN_Hessian/hessian", "*"))):
-#     hessian.append(np.load(file).flatten())
-# hessian = np.array(hessian)
+# grad0 = np.load("/mnt/others/DATA/Inversion/RNN_LBFGS/inversion/grad_00epoch.npy")
+# grad1 = np.load("/mnt/others/DATA/Inversion/RNN_LBFGS/inversion/grad_03epoch.npy")
+# grad2 = np.load("/mnt/others/DATA/Inversion/RNN_LBFGS/inversion/grad_09epoch.npy")
 #
-# vmin,vmax=np.percentile(hessian, [2, 98])
-# plt.imshow(hessian, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+# fig, axes = plt.subplots(1, 3)
+# vmin,vmax=np.percentile(grad0, [2, 98])
+# axes[0].imshow(grad0, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+# axes[1].imshow(grad1, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+# axes[2].imshow(grad2, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
 # plt.show()
-# #
-# hessian_inv = np.linalg.inv(hessian)
-#
-# delta_x = hessian_inv@np.expand_dims(grad.flatten(), 0).T
-# delta_x = np.reshape(delta_x,shape)
 
 """
 Precondtioned by Hessian
@@ -105,19 +94,19 @@ Precondtioned by Hessian
 # plt.show()
 
 
-# Point model
-# true = np.ones((51, 101), dtype=np.float32)*1500.
+"""
+Cheese Model
+"""
+# true = np.ones((51, 101), dtype=np.float32) * 1500
+#
 # true[7:,:] = 2000.
+# true[24:27,47:53] = 2250
+# true[40:,:] = 2500
 #
-# # Scatter1
-# true[14,31] = 2500
+# init = np.ones_like(true) * 1500
+# init[7:,:] = 2000.
+# init[40:,:] = 2500
 #
-# # Scatter2
-#
-# # Scatter3
-#
-# init = np.ones_like(true) * 1500.
-# init[7:,:] = 2000
 # fig, axes = plt.subplots(1, 2)
 # vmin,vmax=np.percentile(true, [2, 98])
 # axes[0].imshow(true, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
@@ -125,19 +114,37 @@ Precondtioned by Hessian
 # axes[1].imshow(init, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
 #
 # plt.show()
-# #
-# np.save("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/true21x21.npy", true)
-# np.save("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/init21x21.npy", init)
+# np.save("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/true.npy", true)
+# np.save("/mnt/others/DATA/Inversion/RNN_Hessian/velocity/init.npy", init)
 
+"""
+Scatter point test
+"""
+# pmlN = 10
+# nx = 101
+# nz = 51
+# pregrad = np.zeros((nz+2*pmlN, nx+2*pmlN))
+# for i in range(3):
+#     H = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/hessian/hessian_%dhot.npy"%i)
+#
+#     # H = np.zeros(shape=(nz*nx, nz*nx), dtype=np.float32)
+#     # for i in range(pmlN, nz+pmlN):
+#     #     for j in range(pmlN, nx+pmlN):
+#             # H[(i-pmlN)*nz+j] = np.reshape(grad[i*(nz+pmlN*2)+j], (nz+pmlN*2, nx+pmlN*2))[pmlN:-pmlN, pmlN:-pmlN].flatten()
+#     # grad = grad[pmlN:-pmlN, pmlN:-pmlN]
+#     grad = np.load("/mnt/others/DATA/Inversion/RNN_Hessian/grad/grad_%dhot.npy"%i)
+#     pregrad += np.reshape(np.linalg.inv(H)@grad.flatten(), (nz+2*pmlN, nx+2*pmlN))
 
-
-
-
-
-
-
-
-
+#
+# grad = grad[pmlN:-pmlN, pmlN:-pmlN]
+# pregrad = pregrad[pmlN:-pmlN, pmlN:-pmlN]
+#
+# fig, axes = plt.subplots(1, 2)
+# vmin,vmax=np.percentile(pregrad, [2, 98])
+# axes[0].imshow(pregrad, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+# vmin,vmax=np.percentile(pregrad, [2, 98])
+# axes[1].imshow(pregrad, vmin=vmin, vmax=vmax, cmap=plt.cm.seismic, aspect='auto')
+# plt.show()
 
 
 
